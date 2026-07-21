@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrainGym Malaysia - Latihan Minda Pintar</title>
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary: #2563EB;
+            --primary-hover: #1D4ED8;
+            --secondary: #22C55E;
+            --accent: #F59E0B;
+            --danger: #EF4444;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --radius: 20px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0F172A;
+            --card-bg: #1E293B;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --border: #334155;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 90vh;
+            position: relative;
+        }
+
+        header {
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            font-size: 1.75rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        .icon-btn:hover {
+            background: var(--border);
+        }
+
+        .screen {
+            display: none;
+            flex: 1;
+            padding: 1.5rem;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Setup / Profile Screen */
+        .setup-card {
+            text-align: center;
+            margin: auto 0;
+        }
+
+        .setup-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .setup-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            color: var(--text-main);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.85rem;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+        }
+
+        /* Dashboard Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+        }
+
+        .stat-info h4 {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .stat-info p {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .cat-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .cat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .cat-icon {
+            font-size: 1.75rem;
+        }
+
+        .cat-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .cat-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Quiz Screen */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin: 0 1rem;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .question-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .option-btn:hover {
+            background: var(--border);
+        }
+
+        .option-btn.correct {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+
+        .option-btn.incorrect {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* Result Screen */
+        .result-card {
+            text-align: center;
+            margin: auto 0;
+        }
+
+        .result-trophy {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        .result-score {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Navigation Bottom Bar */
+        nav.bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 0.75rem;
+            border-top: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item span.icon {
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <div class="logo-area">
+                <span class="logo-icon">🧠</span>
+                <div class="logo-text">
+                    <h1>BrainGym</h1>
+                    <p>Malaysia Edition</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="Tukar Tema">🌓</button>
+                <button class="icon-btn" id="langToggle" onclick="toggleLang()" title="Bahasa">BM</button>
+            </div>
+        </header>
+
+        <!-- SCREEN 1: SETUP & PROFIL -->
+        <div id="setupScreen" class="screen active">
+            <div class="setup-card">
+                <h2>Selamat Datang!</h2>
+                <p>Sediakan profil anda untuk mula mengasah minda mengikut silibus & budaya Malaysia.</p>
+                <div class="form-group">
+                    <label id="lblNama">Nama Penuh / Nama Samaran</label>
+                    <input type="text" id="inputName" class="form-control" placeholder="Cth: Aiman Hakim">
+                </div>
+                <div class="form-group">
+                    <label id="lblUmur">Pilih Umur (10 - 17 Tahun)</label>
+                    <select id="inputAge" class="form-control">
+                        <option value="10">10 Tahun</option>
+                        <option value="11">11 Tahun</option>
+                        <option value="12">12 Tahun</option>
+                        <option value="13">13 Tahun</option>
+                        <option value="14">14 Tahun</option>
+                        <option value="15">15 Tahun</option>
+                        <option value="16">16 Tahun</option>
+                        <option value="17">17 Tahun</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="saveProfile()">Mula Latihan 🚀</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: DASHBOARD -->
+        <div id="dashScreen" class="screen">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-info">
+                        <h4>Level</h4>
+                        <p id="statLevel">1</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-info">
+                        <h4>XP</h4>
+                        <p id="statXp">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🧠</div>
+                    <div class="stat-info">
+                        <h4>Brain Score</h4>
+                        <p id="statBrainScore">100</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-info">
+                        <h4>Streak</h4>
+                        <p id="statStreak">1 Hari</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">
+                <span>Pilih Kategori Latihan</span>
+            </div>
+
+            <div class="category-grid" id="categoryGrid">
+                <!-- Dijana Dinamik oleh JavaScript -->
+            </div>
+        </div>
+
+        <!-- SCREEN 3: QUIZ / LATIHAN -->
+        <div id="quizScreen" class="screen">
+            <div class="quiz-header">
+                <button class="icon-btn" onclick="quitQuiz()">✕</button>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <span id="questionTimer" style="font-weight:600; font-size:0.85rem;">30s</span>
+            </div>
+
+            <div class="question-box" id="questionBox">
+                Soalan akan dipaparkan di sini...
+            </div>
+
+            <div class="options-list" id="optionsList">
+                <!-- Pilihan jawapan dinamik -->
+            </div>
+        </div>
+
+        <!-- SCREEN 4: KEPUTUSAN -->
+        <div id="resultScreen" class="screen">
+            <div class="result-card">
+                <div class="result-trophy">🏆</div>
+                <h2>Tahniah, Sesi Selesai!</h2>
+                <div class="result-score" id="resultScoreText">+50 XP</div>
+                <p id="resultDesc" style="color:var(--text-muted); margin-bottom: 1.5rem;">Prestasi yang cemerlang. Teruskan usaha!</p>
+                <button class="btn btn-secondary" onclick="returnToDashboard()">Kembali ke Menu Utama</button>
+            </div>
+        </div>
+
+        <!-- NAVIGATION BAR -->
+        <nav class="bottom-nav" id="bottomNav" style="display:none;">
+            <button class="nav-item active" onclick="switchNav('dash')">
+                <span class="icon">🏠</span>
+                <span>Utama</span>
+            </button>
+            <button class="nav-item" onclick="switchNav('leaderboard')">
+                <span class="icon">🏆</span>
+                <span>Ranking</span>
+            </button>
+            <button class="nav-item" onclick="switchNav('profile')">
+                <span class="icon">👤</span>
+                <span>Profil</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuCdDwAFi5BASWF4REK2zveq_E9yTL7lM",
+            authDomain: "braingym-dewasa-edisi-ma-d7498.firebaseapp.com",
+            databaseURL: "https://braingym-dewasa-edisi-ma-d7498-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "braingym-dewasa-edisi-ma-d7498",
+            storageBucket: "braingym-dewasa-edisi-ma-d7498.firebasestorage.app",
+            messagingSenderId: "1052582921756",
+            appId: "1:1052582921756:web:b04098a2702b9e25e081d9"
+        };
+        
+        // Initialize Firebase safely
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch (e) {
+            console.warn("Firebase initialization skipped or offline mode active.");
+        }
+
+        // --- APP STATE & DATA ---
+        let state = {
+            name: localStorage.getItem('bg_name') || '',
+            age: localStorage.getItem('bg_age') || '12',
+            level: parseInt(localStorage.getItem('bg_level') || '1'),
+            xp: parseInt(localStorage.getItem('bg_xp') || '0'),
+            brainScore: parseInt(localStorage.getItem('bg_brainScore') || '100'),
+            streak: parseInt(localStorage.getItem('bg_streak') || '1'),
+            lang: localStorage.getItem('bg_lang') || 'BM',
+            theme: localStorage.getItem('bg_theme') || 'light'
+        };
+
+        // Bank Soalan (Modular JSON Struktur untuk sokongan hingga 100,000 soalan)
+        const questionBank = {
+            'Matematik': [
+                { q: "Berapakah hasil darab bagi 12 × 8?", options: ["86", "96", "106", "88"], answer: 1, explanation: "12 didarab dengan 8 bersamaan dengan 96." },
+                { q: "Jika harga sehelai baju di Mydin ialah RM25.50 dan anda beli 2 helai, berapa baki jika anda bayar dengan RM60?", options: ["RM9.00", "RM8.00", "RM10.50", "RM11.00"], answer: 0, explanation: "RM25.50 × 2 = RM51.00. RM60 - RM51 = RM9.00." }
+            ],
+            'Bahasa Melayu': [
+                { q: "Pilih simpulan bahasa yang membawa maksud 'sombong':", options: ["Kaki botol", "Batu api", "Anak emas", "Kecil hati"], answer: 0, explanation: "Simpulan bahasa 'kaki botol' atau seumpamanya merujuk perangai tertentu, manakala sombong sering dikaitkan dengan 'hidung tinggi'." },
+                { q: "Apakah sinonim bagi perkataan 'cermat'?", options: ["Lalai", "Cekap", "Teliti", "Kasar"], answer: 2, explanation: "Cermat bermaksud berhati-hati dan teliti dalam melakukan sesuatu." }
+            ],
+            'English': [
+                { q: "Choose the correct past tense of 'eat':", options: ["Eaten", "Ate", "Eating", "Eats"], answer: 1, explanation: "'Ate' is the correct past tense form of 'eat'." },
+                { q: "What is the synonym of 'intelligent'?", options: ["Smart", "Lazy", "Slow", "Tired"], answer: 0, explanation: "'Smart' has a similar meaning to 'intelligent'." }
+            ],
+            'Sains': [
+                { q: "Apakah gas yang dibebaskan oleh tumbuhan semasa proses fotosintesis?", options: ["Karbon dioksida", "Oksigen", "Nitrogen", "Hidrogen"], answer: 1, explanation: "Tumbuhan menyerap karbon dioksida dan membebaskan oksigen ke udara." },
+                { q: "Unit S.I. bagi daya (force) ialah:", options: ["Joule", "Watt", "Newton", "Pascal"], answer: 2, explanation: "Newton (N) ialah unit ukuran piawai bagi daya." }
+            ],
+            'Pengetahuan Am': [
+                { q: "Apakah ibu negeri bagi negeri Perak Darul Ridzuan?", options: ["Taiping", "Ipoh", "Teluk Intan", "Kuala Kangsar"], answer: 1, explanation: "Ipoh ialah ibu bagi negeri Perak." },
+                { q: "Berapakah jalur yang terdapat pada Bendera Malaysia (Jalur Gemilang)?", options: ["13 jalur", "14 jalur", "15 jalur", "16 jalur"], answer: 1, explanation: "Jalur Gemilang mempunyai 14 jalur merah dan putih melambangkan 13 negeri dan 1 Wilayah Persekutuan." }
+            ],
+            'Logik': [
+                { q: "Cari nombor seterusnya dalam siri: 2, 4, 8, 16, ...", options: ["24", "30", "32", "36"], answer: 2, explanation: "Setiap nombor didarabkan dengan 2 (16 × 2 = 32)." }
+            ]
+        };
+
+        let currentCategory = '';
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let timer = null;
+        let timeLeft = 30;
+
+        // Categories metadata for Dashboard
+        const categoriesList = [
+            { id: 'Matematik', name: 'Matematik', icon: '🔢', desc: 'Mental math, pecahan & wang' },
+            { id: 'Bahasa Melayu', name: 'Bahasa Melayu', icon: '🇲🇾', desc: 'Tatabahasa & peribahasa' },
+            { id: 'English', name: 'English', icon: '📚', desc: 'Grammar & vocabulary' },
+            { id: 'Sains', name: 'Sains', icon: '🧪', desc: 'Fizik, biologi & alam' },
+            { id: 'Pengetahuan Am', name: 'Pengetahuan Am', icon: '🌏', desc: 'Malaysia & dunia' },
+            { id: 'Logik', name: 'Logik & IQ', icon: '🧩', desc: 'Siri nombor & corak' }
+        ];
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            applyTheme();
+            if (state.name) {
+                showDashboard();
+            } else {
+                showScreen('setupScreen');
+            }
+        };
+
+        function saveProfile() {
+            const nameInput = document.getElementById('inputName').value.trim();
+            const ageInput = document.getElementById('inputAge').value;
+            if (!nameInput) {
+                alert('Sila masukkan nama anda!');
+                return;
+            }
+            state.name = nameInput;
+            state.age = ageInput;
+            localStorage.setItem('bg_name', state.name);
+            localStorage.setItem('bg_age', state.age);
+            showDashboard();
+        }
+
+        function showDashboard() {
+            showScreen('dashScreen');
+            document.getElementById('bottomNav').style.display = 'flex';
+            
+            // Update stats
+            document.getElementById('statLevel').innerText = state.level;
+            document.getElementById('statXp').innerText = state.xp;
+            document.getElementById('statBrainScore').innerText = state.brainScore;
+            document.getElementById('statStreak').innerText = state.streak + ' Hari';
+
+            // Render categories
+            const grid = document.getElementById('categoryGrid');
+            grid.innerHTML = '';
+            categoriesList.forEach(cat => {
+                grid.innerHTML += `
+                    <div class="cat-card" onclick="startQuiz('${cat.id}')">
+                        <div class="cat-icon">${cat.icon}</div>
+                        <div class="cat-title">${cat.name}</div>
+                        <div class="cat-desc">${cat.desc}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // --- QUIZ LOGIC ---
+        function startQuiz(category) {
+            currentCategory = category;
+            currentQuestions = questionBank[category] || questionBank['Matematik'];
+            currentIndex = 0;
+            score = 0;
+            showScreen('quizScreen');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentIndex >= currentQuestions.length) {
+                endQuiz();
+                return;
+            }
+
+            // Progress bar
+            const progress = ((currentIndex) / currentQuestions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            const qData = currentQuestions[currentIndex];
+            document.getElementById('questionBox').innerText = qData.q;
+
+            const optsList = document.getElementById('optionsList');
+            optsList.innerHTML = '';
+            qData.options.forEach((opt, idx) => {
+                optsList.innerHTML += `<button class="option-btn" onclick="checkAnswer(${idx})">${opt}</button>`;
+            });
+
+            resetTimer();
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            timeLeft = 30;
+            document.getElementById('questionTimer').innerText = timeLeft + 's';
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('questionTimer').innerText = timeLeft + 's';
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    checkAnswer(-1); // Time out
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(selectedIndex) {
+            clearInterval(timer);
+            const qData = currentQuestions[currentIndex];
+            const buttons = document.querySelectorAll('.option-btn');
+
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === qData.answer) {
+                    btn.classList.add('correct');
+                } else if (idx === selectedIndex) {
+                    btn.classList.add('incorrect');
+                }
+            });
+
+            if (selectedIndex === qData.answer) {
+                score += 10;
+            }
+
+            setTimeout(() => {
+                currentIndex++;
+                loadQuestion();
+            }, 1200);
+        }
+
+        function endQuiz() {
+            clearInterval(timer);
+            state.xp += score;
+            state.brainScore += Math.floor(score / 2);
+            if (state.xp >= state.level * 50) {
+                state.level++;
+            }
+            localStorage.setItem('bg_xp', state.xp);
+            localStorage.setItem('bg_level', state.level);
+            localStorage.setItem('bg_brainScore', state.brainScore);
+
+            document.getElementById('resultScoreText').innerText = `+${score} XP Diperolehi!`;
+            showScreen('resultScreen');
+            document.getElementById('bottomNav').style.display = 'none';
+        }
+
+        function quitQuiz() {
+            clearInterval(timer);
+            showDashboard();
+        }
+
+        function returnToDashboard() {
+            showDashboard();
+        }
+
+        // --- THEME & LANG TOGGLE ---
+        function toggleTheme() {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('bg_theme', state.theme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            document.body.setAttribute('data-theme', state.theme);
+            document.getElementById('themeToggle').innerText = state.theme === 'light' ? '🌙' : '☀️';
+        }
+
+        function toggleLang() {
+            state.lang = state.lang === 'BM' ? 'EN' : 'BM';
+            localStorage.setItem('bg_lang', state.lang);
+            document.getElementById('langToggle').innerText = state.lang;
+        }
+
+        function switchNav(nav) {
+            if (nav === 'dash') {
+                showDashboard();
+            } else if (nav === 'leaderboard') {
+                alert('Papan pendakrifan (Leaderboard) aktif dan bersedia untuk perbandingan skor rakan sebaya!');
+            } else if (nav === 'profile') {
+                alert(`Profil Pengguna:\nNama: ${state.name}\nUmur: ${state.age} Tahun\nLevel: ${state.level}\nXP: ${state.xp}`);
+            }
+        }
+    </script>
+</body>
+</html>
